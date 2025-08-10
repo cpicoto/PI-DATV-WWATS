@@ -43,13 +43,15 @@ PI-DATV-WWATS/
 ├── README.md
 ├── HOWTO-install.md
 ├── app/
-│   ├── streammer.py             # GPIO + FFmpeg + tee + reconnect + status overlay
+│   ├── streamer.py              # GPIO + FFmpeg + tee + reconnect + status overlay
 │   └── rtmp-ui.py               # Flask Start/Stop web UI
 ├── config/
 │   ├── rtmp-streamer.env.sample # example config copied to /etc/rtmp-streamer.env
 │   └── 99-rtmp-cam.rules        # optional udev stable device names
 ├── scripts/
 │   ├── install.sh               # installs packages, files, and systemd services
+│   ├── check-system.sh          # pre-installation system check
+│   ├── troubleshoot.sh          # troubleshooting and diagnostics
 │   └── preview.sh               # split-screen HDMI renderer (ffplay lavfi)
 ├── services/
 │   ├── rtmp-streamer.service    # capture/encode/push
@@ -59,17 +61,44 @@ PI-DATV-WWATS/
     └── kiosk-autostart.desktop  # Chromium kiosk autostart
 ```
 
+## Hardware Setup Guide
+
+### Basic Wiring
+
+1. **Power**: Use a quality 5V power supply (3A+ recommended)
+2. **Camera**: Connect UVC-compatible USB camera with built-in microphone
+3. **Button**: Connect momentary push button:
+   - One side to **GPIO17** (Physical pin 11)
+   - Other side to **GND** (Physical pin 9)
+4. **LED (Optional)**: Connect status LED:
+   - **Anode (+)** → **330Ω resistor** → **GPIO27** (Physical pin 13)
+   - **Cathode (-)** → **GND** (Physical pin 14)
+5. **Display**: Connect HDMI monitor for split-screen preview
+
+### Recommended Hardware
+
+- **Raspberry Pi 4B or 5** (4GB+ RAM recommended)
+- **UVC USB Camera**: Logitech C920, C922, or similar 1080p camera
+- **MicroSD Card**: 32GB+ Class 10 or better
+- **Power Supply**: Official Raspberry Pi power adapter
+- **Case**: With proper ventilation and GPIO access
+- **Button**: Momentary tactile switch
+- **LED**: Standard 5mm LED with 330Ω resistor
+
 ## Quick Start (Fresh Pi)
 
 > **Note:** Desktop image is recommended for kiosk UI. Lite also works, but you'll need a browser if you want on-device mouse control.
 
-### 1. Install Prerequisites and Clone
+### 1. Pre-Installation Check (Recommended)
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git
 git clone https://github.com/cpicoto/PI-DATV-WWATS.git
 cd PI-DATV-WWATS
+./scripts/check-system.sh
 ```
+
+This will verify your system meets the requirements.
 
 ### 2. Run the Installer
 
@@ -77,18 +106,32 @@ cd PI-DATV-WWATS
 sudo ./scripts/install.sh
 ```
 
+The installer will:
+- Install all required packages (ffmpeg, python3-gpiozero, etc.)
+- Create application directories
+- Set up systemd services
+- Configure user permissions
+- Set up kiosk autostart (if desktop available)
+
 ### 3. Configure Your Identity and Options
 
 ```bash
 sudo nano /etc/rtmp-streamer.env
 ```
 
-Set at least:
+**Required settings:**
 ```bash
-RTMP_CALLSIGN=AD7NP
-RTMP_TOKEN=REPLACE_WITH_YOUR_JWT
-ENCODER=h264_v4l2m2m    # or libx264 for software encoding
-VIDEO_INPUT_FORMAT=mjpeg  # mjpeg, yuyv422, or leave blank to auto
+RTMP_CALLSIGN=YOUR_CALLSIGN    # Replace with your amateur radio callsign
+RTMP_TOKEN=YOUR_JWT_TOKEN      # Replace with your JWT token from WWATS
+```
+
+**Optional but recommended:**
+```bash
+ENCODER=h264_v4l2m2m          # Use hardware encoder (Pi 4/5)
+VIDEO_INPUT_FORMAT=mjpeg      # For better camera compatibility
+VIDEO_WIDTH=1920              # Adjust based on your camera/bandwidth
+VIDEO_HEIGHT=1080
+BITRATE=4000k                 # Adjust based on your upload bandwidth
 ```
 
 Then protect the file:
@@ -107,6 +150,13 @@ sudo reboot
 - The **Chromium kiosk** opens at `http://localhost:8080` with big **Start/Stop** buttons
 - The **HDMI** shows split-screen (local | `https://stream.wwats.net/`) with a live text overlay
 - The **GPIO button** (GPIO17) toggles streaming
+
+### Troubleshooting
+
+If something doesn't work, run the troubleshooting script:
+```bash
+./scripts/troubleshoot.sh
+```
 
 ## Configuration (All Keys)
 
