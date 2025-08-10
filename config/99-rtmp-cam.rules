@@ -1,0 +1,5 @@
+# Replace idVendor/idProduct with your camera's values (lsusb)
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="082d", SYMLINK+="video-cam"
+
+# Optional USB audio (by id) example
+SUBSYSTEM=="sound", KERNEL=="card*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="082d", SYMLINK+="snd-cam"

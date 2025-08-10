@@ -1,0 +1,14 @@
+[Unit]
+Description=RTMP control web UI (Start/Stop)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/pi-datv-wwats/rtmp-ui.py
+WorkingDirectory=/opt/pi-datv-wwats
+Restart=always
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target

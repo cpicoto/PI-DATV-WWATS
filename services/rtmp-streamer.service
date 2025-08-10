@@ -1,0 +1,18 @@
+[Unit]
+Description=WWATS one-button RTMP USB-Cam Streamer
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/rtmp-streamer.env
+ExecStart=/usr/bin/python3 /opt/pi-datv-wwats/streamer.py
+WorkingDirectory=/opt/pi-datv-wwats
+Restart=always
+RestartSec=3
+User=pi
+Group=video
+SupplementaryGroups=audio,plugdev,render,input,gpio
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=HDMI split-screen preview (local+remote) with overlay
+After=rtmp-streamer.service
+Requires=rtmp-streamer.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/rtmp-streamer.env
+ExecStart=/opt/pi-datv-wwats/preview.sh
+User=pi
+Group=video
+Environment=SDL_VIDEODRIVER=kmsdrm
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
