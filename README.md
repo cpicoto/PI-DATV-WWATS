@@ -40,18 +40,24 @@ A Raspberry Pi–based one-button + web UI **RTMP streaming station** for WWATS.
 PI-DATV-WWATS/
 ├── LICENSE
 ├── .gitignore
-├── README.md
-├── HOWTO-install.md
+├── README.md                    # This file - comprehensive project guide
+├── HOWTO-install.md            # Detailed installation instructions
+├── IMAGE-CREATION.md           # Pre-configured image creation guide
+├── FLASH-INSTRUCTIONS.md       # User guide for flashing pre-made images
+├── FIRST-TIME-SETUP.md         # Post-flash configuration guide
 ├── app/
 │   ├── streamer.py              # GPIO + FFmpeg + tee + reconnect + status overlay
 │   └── rtmp-ui.py               # Flask Start/Stop web UI
 ├── config/
 │   ├── rtmp-streamer.env.sample # example config copied to /etc/rtmp-streamer.env
+│   ├── rtmp-streamer.env.template # template config for pre-configured images
 │   └── 99-rtmp-cam.rules        # optional udev stable device names
 ├── scripts/
 │   ├── install.sh               # installs packages, files, and systemd services
 │   ├── check-system.sh          # pre-installation system check
 │   ├── troubleshoot.sh          # troubleshooting and diagnostics
+│   ├── first-time-setup.sh      # interactive setup for pre-configured images
+│   ├── prepare-image.sh         # prepares system for image distribution
 │   └── preview.sh               # split-screen HDMI renderer (ffplay lavfi)
 ├── services/
 │   ├── rtmp-streamer.service    # capture/encode/push
@@ -84,6 +90,25 @@ PI-DATV-WWATS/
 - **Case**: With proper ventilation and GPIO access
 - **Button**: Momentary tactile switch
 - **LED**: Standard 5mm LED with 330Ω resistor
+
+## 🚀 Two Ways to Get Started
+
+### Option 1: Pre-configured Image (Easiest - 5 Minutes)
+
+**Best for:** Users who want to get streaming quickly with minimal setup.
+
+1. **Download** the pre-configured image (when available)
+2. **Flash** to SD card using Raspberry Pi Imager
+3. **Boot** your Pi and connect to WiFi
+4. **Run setup:** `./scripts/first-time-setup.sh`
+5. **Enter** your callsign and JWT token
+6. **Start streaming!**
+
+📖 **Detailed Guide:** See [FLASH-INSTRUCTIONS.md](FLASH-INSTRUCTIONS.md) for complete flashing and setup instructions.
+
+### Option 2: Manual Installation (Custom Setup)
+
+**Best for:** Users who want to customize their installation or learn the process.
 
 ## Quick Start (Fresh Pi)
 
@@ -344,6 +369,34 @@ sudo systemctl disable --now rtmp-preview rtmp-ui rtmp-streamer
 sudo rm -f /etc/systemd/system/rtmp-{preview,ui,streamer}.service
 sudo rm -rf /opt/pi-datv-wwats /etc/rtmp-streamer.env /etc/udev/rules.d/99-rtmp-cam.rules
 ```
+
+## 📚 Additional Documentation
+
+### For Users
+- **[FLASH-INSTRUCTIONS.md](FLASH-INSTRUCTIONS.md)** - Complete guide for flashing and setting up pre-configured images
+- **[FIRST-TIME-SETUP.md](FIRST-TIME-SETUP.md)** - Detailed post-flash configuration instructions
+- **[HOWTO-install.md](HOWTO-install.md)** - Advanced manual installation guide
+
+### For Developers and Image Creators
+- **[IMAGE-CREATION.md](IMAGE-CREATION.md)** - Complete guide for creating and distributing pre-configured images
+- Includes automated image preparation scripts
+- Distribution packaging instructions
+- Quality assurance checklists
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Test your changes thoroughly
+4. Submit a pull request with detailed description
+
+### Reporting Issues
+When reporting problems, please include:
+- Output from `./scripts/troubleshoot.sh`
+- Relevant log entries from `journalctl`
+- Hardware configuration details
+- Steps to reproduce the issue
 
 ---
 
