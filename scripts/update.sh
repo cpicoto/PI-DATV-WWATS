@@ -34,8 +34,16 @@ sudo cp -v scripts/preview-browser.sh /opt/pi-datv-wwats/ 2>/dev/null || echo "p
 sudo chmod +x /opt/pi-datv-wwats/*.sh /opt/pi-datv-wwats/*.py
 
 # Update systemd service files if they changed
-CURRENT_USER=$(whoami)
-CURRENT_GROUP=$(id -gn)
+# Detect real user when running with sudo
+if [[ -n "${SUDO_USER:-}" ]]; then
+    CURRENT_USER="$SUDO_USER"
+    CURRENT_GROUP=$(id -gn "$SUDO_USER")
+else
+    CURRENT_USER=$(whoami)
+    CURRENT_GROUP=$(id -gn)
+fi
+
+echo "Fixing services for user: $CURRENT_USER, group: $CURRENT_GROUP"
 
 if ! diff -q services/rtmp-streamer.service /etc/systemd/system/rtmp-streamer.service >/dev/null 2>&1; then
     echo "Updating rtmp-streamer.service..."
