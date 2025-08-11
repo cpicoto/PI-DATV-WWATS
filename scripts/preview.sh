@@ -7,56 +7,65 @@ source /etc/rtmp-streamer.env
 : "${OVERLAY_FONT:=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}"
 
 echo "=== DEBUG: Preview Script Starting ==="
-echo "PREVIEW_UDP_URL: ${PREVIEW_UDP_URL}"
-echo "REMOTE_URL: ${REMOTE_URL}"
-echo "SCREEN_W: ${SCREEN_W}"
-echo "SCREEN_H: ${SCREEN_H}"
-echo "OVERLAY_FONT: ${OVERLAY_FONT}"
-echo
 
-# Build complex filter for split screen with overlay
-FILTER="[0:v]setpts=PTS-STARTPTS,scale=${SCREEN_W}/2:${SCREEN_H}:force_original_aspect_ratio=decrease,setsar=1[loc]; \
-[1:v]setpts=PTS-STARTPTS,scale=${SCREEN_W}/2:${SCREEN_H}:force_original_aspect_ratio=decrease,setsar=1[rem]; \
+# Set up display environment
+export DISPLAY=${DISPLAY:-:0}
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/tmp/runtime-$(id -u)}
+mkdir -p "$XDG_RUNTIME_DIR"
+
+echo "Display environment: DISPLAY=$DISPLAY, XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+
+# Check if local UDP stream is available
+echo "Checking for local UDP stream..."
+if netstat -ulp 2>/dev/null | grep -q 23000; then
+    echo "✓ Local UDP stream detected"
+    LOCAL_INPUT="${PREVIEW_UDP_URL}"
+else
+    echo "⚠ No local UDP stream found - using test pattern"
+    LOCAL_INPUT="testsrc=duration=10:size=${SCREEN_W}x${SCREEN_H}:rate=30"
+fi
+
+# Check remote stream accessibility 
+echo "Checking remote stream..."
+if timeout 5s ffprobe -v quiet "${REMOTE_URL}" 2>/dev/null; then
+    echo "✓ Remote stream accessible"
+    REMOTE_INPUT="${REMOTE_URL}"
+else
+    echo "⚠ Remote stream not accessible - using test pattern"
+    REMOTE_INPUT="testsrc=duration=10:size=${SCREEN_W}x${SCREEN_H}:rate=30"
+fi
+
+echo "Local input: $LOCAL_INPUT"
+echo "Remote input: $REMOTE_INPUT"
+
+# Build filter - handle different input types
+if [[ "$LOCAL_INPUT" == "testsrc"* ]] && [[ "$REMOTE_INPUT" == "testsrc"* ]]; then
+    # Both test sources - use lavfi
+    FILTER="testsrc=duration=3600:size=${SCREEN_W}/2:${SCREEN_H}:rate=30[loc]; \
+testsrc=duration=3600:size=${SCREEN_W}/2:${SCREEN_H}:rate=30[rem]; \
 [loc][rem]hstack=inputs=2[combined]; \
-[combined]pad=${SCREEN_W}:${SCREEN_H}:(ow-iw)/2:(oh-ih)/2:color=black[padded]; \
-[padded]drawtext=fontfile=${OVERLAY_FONT}:textfile=/run/rtmp-status.txt:reload=1:x=20:y=H-th-20:fontsize=24:fontcolor=white:box=1:boxborderw=10:boxcolor=black@0.5[out]"
-
-echo "=== DEBUG: Filter Complex ==="
-echo "${FILTER}"
-echo
-
-# Test different approaches
-echo "=== DEBUG: Testing FFmpeg version ==="
-ffmpeg -version | head -1
-
-echo
-echo "=== DEBUG: Testing input accessibility ==="
-echo "Checking UDP stream availability..."
-timeout 3s ffprobe -v quiet -print_format json -show_streams "${PREVIEW_UDP_URL}" 2>/dev/null && echo "UDP stream accessible" || echo "UDP stream not accessible"
-
-echo "Checking remote stream availability..."
-timeout 10s ffprobe -v quiet -print_format json -show_streams "${REMOTE_URL}" 2>/dev/null && echo "Remote stream accessible" || echo "Remote stream not accessible"
-
-echo
-echo "=== DEBUG: Attempting simple ffplay test ==="
-echo "Testing simple ffplay with first input only..."
-timeout 5s ffplay -loglevel error -autoexit -t 2 "${PREVIEW_UDP_URL}" 2>&1 || echo "Simple UDP test failed"
-
-echo
-echo "=== DEBUG: Building ffplay command ==="
-CMD="ffplay -loglevel info -fflags nobuffer -flags low_delay -fast -probesize 32 -analyzeduration 0 -autoexit 0 -fs \
-    -i \"${PREVIEW_UDP_URL}\" \
-    -i \"${REMOTE_URL}\" \
-    -filter_complex \"${FILTER}\" \
-    -map \"[out]\""
-
-echo "Full command:"
-echo "${CMD}"
-echo
-
-echo "=== DEBUG: Executing command ==="
-exec ffplay -loglevel info -fflags nobuffer -flags low_delay -fast -probesize 32 -analyzeduration 0 -autoexit 0 -fs \
-    -i "${PREVIEW_UDP_URL}" \
-    -i "${REMOTE_URL}" \
-    -filter_complex "${FILTER}" \
-    -map "[out]"
+[combined]drawtext=text='Preview - No Streams Available':fontfile=${OVERLAY_FONT}:x=50:y=50:fontsize=32:fontcolor=white"
+    
+    echo "Using test pattern mode"
+    exec ffplay -f lavfi -i "$FILTER" -fs -autoexit 0
+    
+elif [[ "$LOCAL_INPUT" != "testsrc"* ]] && [[ "$REMOTE_INPUT" != "testsrc"* ]]; then
+    # Both real streams - use multiple inputs
+    FILTER="[0:v]scale=${SCREEN_W}/2:${SCREEN_H}[loc]; \
+[1:v]scale=${SCREEN_W}/2:${SCREEN_H}[rem]; \
+[loc][rem]hstack=inputs=2[combined]; \
+[combined]drawtext=fontfile=${OVERLAY_FONT}:textfile=/run/rtmp-status.txt:reload=1:x=20:y=H-th-20:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5[out]"
+    
+    echo "Using dual stream mode"
+    exec ffplay -i "$LOCAL_INPUT" -i "$REMOTE_INPUT" -filter_complex "$FILTER" -map "[out]" -fs -autoexit 0
+    
+else
+    # Mixed mode - fallback to single stream
+    if [[ "$LOCAL_INPUT" != "testsrc"* ]]; then
+        echo "Using local stream only"
+        exec ffplay -i "$LOCAL_INPUT" -fs -autoexit 0
+    else
+        echo "Using remote stream only"
+        exec ffplay -i "$REMOTE_INPUT" -fs -autoexit 0
+    fi
+fi
