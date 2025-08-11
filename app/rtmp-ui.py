@@ -2,6 +2,16 @@
 from flask import Flask, redirect, render_template_string
 import subprocess, os
 
+def send_command(cmd):
+    """Send a command to the streamer process."""
+    try:
+        with open(COMMAND_FILE, 'w') as f:
+            f.write(cmd)
+        return True
+    except Exception as e:
+        print(f"Error sending command: {e}")
+        return False
+
 TEMPLATE = """
 <!doctype html>
 <title>PI-DATV-WWATS</title>
@@ -37,8 +47,15 @@ def svc(cmd):
 def send_command(cmd):
     """Send a command to the streamer process."""
     try:
+        # Create command file with proper permissions for cross-user access
         with open(COMMAND_FILE, 'w') as f:
             f.write(cmd)
+        
+        # Make the file readable/writable by both users
+        import stat
+        import os
+        os.chmod(COMMAND_FILE, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+        
         return True
     except Exception as e:
         print(f"Error sending command: {e}")
