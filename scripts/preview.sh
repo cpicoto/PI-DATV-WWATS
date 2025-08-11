@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
-# Clean layout: WWATS (right) + Camera + Web UI (left column)
+# Clean# Check if camera is available
+if [[ -c "$VIDEO_DEV" ]]; then
+    echo "✓ Camera found at $VIDEO_DEV"
+    LOCAL_INPUT="$VIDEO_DEV"
+else
+    echo "⚠ Camera not found at $VIDEO_DEV, using test pattern"
+    LOCAL_INPUT="testsrc"
+fi
+
+echo "Configuration:"
+echo "- REMOTE_URL: $REMOTE_URL"
+echo "- LOCAL_INPUT: $LOCAL_INPUT"
+echo "- Screen: ${SCREEN_W}x${SCREEN_H}"
+
+# Clean up any existing browser processes to avoid conflicts
+echo "Cleaning up existing browser processes..."
+pkill -f "chrome-wwats" 2>/dev/null || true
+pkill -f "chrome-webui" 2>/dev/null || true
+sleep 1 WWATS (right) + Camera + Web UI (left column)
 set -euo pipefail
 source /etc/rtmp-streamer.env
 : "${VIDEO_DEV:=/dev/video0}"
@@ -57,9 +75,9 @@ WEBUI_HEIGHT=$((SCREEN_H - CAMERA_HEIGHT - 10))  # Remaining space
 echo "Opening WWATS interface (right side)..."
 # Open WWATS in windowed mode on the right side
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
+    DISPLAY=:0 chromium --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
+    DISPLAY=:0 chromium-browser --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "$REMOTE_URL" &
 else
@@ -68,14 +86,14 @@ else
 fi
 
 # Wait a moment for browser to start
-sleep 2
+sleep 3
 
 echo "Opening local web UI (bottom left)..."
 # Open local web UI in bottom left area
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium-browser --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
