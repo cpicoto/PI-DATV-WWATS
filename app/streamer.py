@@ -253,9 +253,9 @@ class StreamController:
                     logger.info("Received TOGGLE command from web UI")
                     self.toggle()
                     
-        except PermissionError:
-            # Permission error - just skip silently, don't spam logs
-            pass
+        except PermissionError as e:
+            # Log permission errors for debugging
+            logger.warning(f"Permission error on command file: {e}")
         except Exception as e:
             logger.warning(f"Error checking web commands: {e}")
 
