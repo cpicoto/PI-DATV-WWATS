@@ -7,8 +7,8 @@ Wants=network-online.target
 ExecStart=/usr/bin/python3 /opt/pi-datv-wwats/rtmp-ui.py
 WorkingDirectory=/opt/pi-datv-wwats
 Restart=always
-User=pi
-Group=pi
+User=datv
+Group=datv
 
 [Install]
 WantedBy=multi-user.target

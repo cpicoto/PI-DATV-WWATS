@@ -7,7 +7,7 @@ Requires=rtmp-streamer.service
 Type=simple
 EnvironmentFile=/etc/rtmp-streamer.env
 ExecStart=/opt/pi-datv-wwats/preview.sh
-User=pi
+User=datv
 Group=video
 Environment=SDL_VIDEODRIVER=x11
 Restart=always

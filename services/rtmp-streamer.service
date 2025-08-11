@@ -10,7 +10,7 @@ ExecStart=/usr/bin/python3 /opt/pi-datv-wwats/streamer.py
 WorkingDirectory=/opt/pi-datv-wwats
 Restart=always
 RestartSec=3
-User=pi
+User=datv
 Group=video
 SupplementaryGroups=audio,plugdev,render,input,gpio
 
