@@ -41,9 +41,9 @@ echo "- Screen: ${SCREEN_W}x${SCREEN_H}"
 
 # Clean up any existing browser processes to avoid conflicts
 echo "Cleaning up existing browser processes..."
-pkill -f "chrome-wwats" 2>/dev/null || true
-pkill -f "chrome-webui" 2>/dev/null || true
-sleep 1
+pkill -f "chromium" 2>/dev/null || true
+pkill -f "firefox" 2>/dev/null || true
+sleep 2
 
 # Calculate layout dimensions
 # Left column: 480px wide (1/4 of 1920)
