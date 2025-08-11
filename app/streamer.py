@@ -14,7 +14,7 @@ from gpiozero import Button, LED, GPIOPinInUse
 
 CONFIG_PATH = "/etc/rtmp-streamer.env"
 STATUS_PATH = "/run/rtmp-status.txt"
-COMMAND_PATH = "/run/rtmp-command.txt"
+COMMAND_PATH = "/tmp/rtmp-command.txt"
 
 # Set up logging
 logging.basicConfig(
