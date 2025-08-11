@@ -43,6 +43,8 @@ echo "- Screen: ${SCREEN_W}x${SCREEN_H}"
 echo "Cleaning up existing browser processes..."
 pkill -f "chromium" 2>/dev/null || true
 pkill -f "firefox" 2>/dev/null || true
+# Clean up old user data directories to prevent conflicts
+rm -rf "$HOME/.chrome-wwats" "$HOME/.chrome-webui" 2>/dev/null || true
 sleep 2
 
 # Calculate layout dimensions
@@ -68,9 +70,9 @@ WEBUI_HEIGHT=$((SCREEN_H - CAMERA_HEIGHT - 10))  # Remaining space
 echo "Opening WWATS interface (right side)..."
 # Open WWATS in windowed mode on the right side
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
+    DISPLAY=:0 chromium --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir="$HOME/.chrome-wwats" --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir="$HOME/.chrome-wwats" --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "$REMOTE_URL" &
 else
@@ -84,9 +86,9 @@ sleep 3
 echo "Opening local web UI (bottom left)..."
 # Open local web UI in bottom left area
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir="$HOME/.chrome-webui" --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir="$HOME/.chrome-webui" --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
