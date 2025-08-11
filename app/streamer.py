@@ -14,6 +14,7 @@ from gpiozero import Button, LED, GPIOPinInUse
 
 CONFIG_PATH = "/etc/rtmp-streamer.env"
 STATUS_PATH = "/run/rtmp-status.txt"
+COMMAND_PATH = "/run/rtmp-command.txt"
 
 # Set up logging
 logging.basicConfig(
@@ -221,6 +222,29 @@ class StreamController:
         except Exception as e:
             logger.warning(f"Could not update status file: {e}")
 
+    def _check_web_commands(self):
+        """Check for commands from the web UI."""
+        try:
+            if os.path.exists(COMMAND_PATH):
+                with open(COMMAND_PATH, 'r') as f:
+                    command = f.read().strip().lower()
+                
+                # Remove the command file
+                os.unlink(COMMAND_PATH)
+                
+                if command == 'start':
+                    logger.info("Received START command from web UI")
+                    self.start()
+                elif command == 'stop':
+                    logger.info("Received STOP command from web UI")
+                    self.stop()
+                elif command == 'toggle':
+                    logger.info("Received TOGGLE command from web UI")
+                    self.toggle()
+                    
+        except Exception as e:
+            logger.warning(f"Error checking web commands: {e}")
+
     def run(self):
         """Main run loop with GPIO button handling."""
         btn_gpio = int(self.env.get('BUTTON_GPIO', '17'))
@@ -243,6 +267,9 @@ class StreamController:
         
         try:
             while True:
+                # Check for commands from web UI
+                self._check_web_commands()
+                
                 # Update status overlay file
                 self._update_status_file(btn_gpio)
 

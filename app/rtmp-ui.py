@@ -29,9 +29,20 @@ app = Flask(__name__)
 
 SERVICE = 'rtmp-streamer.service'
 STATUS_FILE = '/run/rtmp-status.txt'
+COMMAND_FILE = '/run/rtmp-command.txt'
 
 def svc(cmd):
     return subprocess.run(['systemctl', cmd, SERVICE], capture_output=True, text=True)
+
+def send_command(cmd):
+    """Send a command to the streamer process."""
+    try:
+        with open(COMMAND_FILE, 'w') as f:
+            f.write(cmd)
+        return True
+    except Exception as e:
+        print(f"Error sending command: {e}")
+        return False
 
 @app.route('/')
 def index():
@@ -46,12 +57,12 @@ def index():
 
 @app.route('/start')
 def start():
-    svc('start')
+    send_command('start')
     return redirect('/')
 
 @app.route('/stop')
 def stop():
-    svc('stop')
+    send_command('stop')
     return redirect('/')
 
 if __name__ == '__main__':
