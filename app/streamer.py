@@ -57,7 +57,7 @@ def build_rtmp_url(env: Env) -> str:
     return f"{base}/{cs}?token={tok}"
 
 def build_ffmpeg_cmd(env: Env):
-    """Build FFmpeg command with optimized low-latency settings."""
+    """Build FFmpeg command with optimized low-latency settings (your proven command)."""
     # Validate required parameters
     video = env.get('VIDEO_DEV', '/dev/video0')
     if not os.path.exists(video):
@@ -66,95 +66,61 @@ def build_ffmpeg_cmd(env: Env):
     width = env.get('VIDEO_WIDTH', '1280')
     height = env.get('VIDEO_HEIGHT', '720')
     fps = env.get('VIDEO_FPS', '15')
-    a_dev = env.get('AUDIO_DEV', 'default')
     a_rate = env.get('AUDIO_RATE', '48000')
-    bitrate = env.get('BITRATE', '1000k')
-    gop = env.get('GOP_SECONDS', '1')
-    vf = env.get('VF_FILTER', '')
-
+    bitrate = env.get('BITRATE', '2M')  # Use your proven 2M bitrate
+    
     # Build final RTMP URL
     rtmp = build_rtmp_url(env)
-
-    # Encoder selection
-    encoder = (env.get('ENCODER', 'libx264') or 'libx264').strip()
-
-    # Optional explicit camera input format
-    in_fmt = (env.get('VIDEO_INPUT_FORMAT', '') or '').strip()
-
+    
     # Local tee preview
     enable_tee = env.get('ENABLE_TEE_PREVIEW', '0') == '1'
     preview_url = env.get('PREVIEW_UDP_URL', 'udp://127.0.0.1:23000?pkt_size=1316')
-
-    # Calculate buffer size (half of bitrate for low latency)
-    bitrate_num = int(bitrate.rstrip('k')) if bitrate.endswith('k') else int(bitrate)
-    bufsize = f"{bitrate_num // 2}k"
-
+    
+    # Use your exact proven FFmpeg command structure
     cmd = [
         'ffmpeg',
-        # Video input with optimizations (your improved settings)
+        '-y',  # Overwrite output files
+        
+        # Video input with your optimizations
         '-f', 'v4l2',
-        '-input_format', in_fmt or 'mjpeg',
-        '-framerate', str(fps),
+        '-thread_queue_size', '4096',
+        '-input_format', 'mjpeg',
         '-video_size', f'{width}x{height}',
-        '-thread_queue_size', '4096',
-        '-probesize', '32k',
-        '-analyzeduration', '0',
-        '-fflags', '+discardcorrupt',
-        '-flags', 'low_delay',
+        '-framerate', str(fps),
         '-i', video,
-        # Audio input with optimizations
-        '-f', 'alsa',
+        
+        # Audio input - null source (your proven approach)
+        '-f', 'lavfi',
+        '-i', f'anullsrc=channel_layout=stereo:sample_rate={a_rate}',
+        
+        # Video encoding with your proven x264 settings
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-tune', 'zerolatency',
+        '-profile:v', 'baseline',
+        '-level:v', '3.0',
+        '-pix_fmt', 'yuv420p',
+        '-g', '30',
+        '-keyint_min', '30',
+        '-sc_threshold', '0',
+        '-b:v', bitrate,
+        '-maxrate', '2.2M',
+        '-bufsize', '1M',
+        '-x264-params', 'keyint=30:min-keyint=30:scenecut=0:rc-lookahead=0:sliced-threads=1:sync-lookahead=0:me=dia:subme=1:me_range=4:partitions=none:weightb=0:weightp=0:8x8dct=0:fast-pskip=1:mixed-refs=0:trellis=0:chroma-me=0',
+        
+        # Audio encoding
+        '-c:a', 'aac',
+        '-b:a', '128k',
         '-ar', str(a_rate),
-        '-thread_queue_size', '4096',
-        '-i', a_dev
+        '-ac', '2'
     ]
-
-    # Video filter for format and fps
-    vf_filter = f"format=yuv420p,fps={fps}"
-    if vf:
-        vf_filter = f"{vf},{vf_filter}"
     
-    cmd += ['-vf', vf_filter, '-fps_mode', 'cfr']
-
-    # Video encoder config
-    if encoder == 'libx264':
-        cmd += [
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-tune', 'zerolatency',
-            '-pix_fmt', 'yuv420p',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bufsize,
-            '-g', str(int(fps) * int(gop)),
-            '-keyint_min', str(int(fps) * int(gop)),
-            '-sc_threshold', '0',
-            '-x264-params', f'keyint={int(fps) * int(gop)}:min-keyint={int(fps) * int(gop)}:scenecut=0:vbv-maxrate={bitrate_num}:vbv-bufsize={bitrate_num // 2}:nal-hrd=cbr:aud=1:repeat-headers=1'
-        ]
-    else:
-        cmd += [
-            '-c:v', 'h264_v4l2m2m',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bufsize,
-            '-pix_fmt', 'yuv420p',
-            '-g', str(int(fps) * int(gop))
-        ]
-
-    # Audio encode (AAC with optimizations)
-    cmd += [
-        '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-ar', str(a_rate),
-        '-af', 'aresample=async=1:first_pts=0'
-    ]
-
-    # Output flags for low latency
-    cmd += [
-        '-fflags', '+genpts', '-use_wallclock_as_timestamps', '1',
-        '-muxdelay', '0', '-muxpreload', '0'
-    ]
-
-    # Outputs
+    # Output with your proven tee structure
     if enable_tee:
-        tee_spec = f"[f=flv:rtmp_live=live]{rtmp}|[f=mpegts]{preview_url}"
+        tee_spec = f"[f=flv]{rtmp}|[f=mpegts]{preview_url}"
         cmd += ['-f', 'tee', tee_spec]
     else:
-        cmd += ['-f', 'flv', '-rtmp_live', 'live', rtmp]
+        cmd += ['-f', 'flv', rtmp]
 
     return cmd
 
@@ -182,7 +148,7 @@ class StreamController:
         
         try:
             cmd = build_ffmpeg_cmd(self.env)
-            logger.info(f"Starting ffmpeg: {' '.join(cmd[:10])}...")  # Log first part of command
+            logger.info(f"Starting ffmpeg with command: {' '.join(cmd)}")  # Log full command
             self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             logger.info(f"Started streaming process with PID {self.proc.pid}")
             
@@ -303,6 +269,19 @@ class StreamController:
                     rc = self.proc.poll()
                     if rc is not None:
                         attempts += 1
+                        
+                        # Capture FFmpeg error output
+                        try:
+                            stdout, stderr = self.proc.communicate(timeout=1)
+                            if stdout:
+                                logger.error(f"FFmpeg stdout: {stdout.decode('utf-8', errors='ignore')}")
+                            if stderr:
+                                logger.error(f"FFmpeg stderr: {stderr.decode('utf-8', errors='ignore')}")
+                        except subprocess.TimeoutExpired:
+                            logger.warning("Timeout while reading FFmpeg output")
+                        except Exception as e:
+                            logger.warning(f"Error reading FFmpeg output: {e}")
+                        
                         logger.warning(f"ffmpeg exited with code {rc}")
                         
                         if self.led:
