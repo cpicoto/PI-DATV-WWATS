@@ -98,19 +98,26 @@ sleep 2
 
 echo "Opening camera preview (top left)..."
 # Camera preview positioned in top left area
-if [[ "$LOCAL_INPUT" == "testsrc" ]]; then
-    # Test pattern in top left
-    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+# Try UDP stream first (from tee output when streaming), fallback to test pattern
+echo "Trying UDP stream from streamer tee output..."
+if timeout 3 ffprobe -v quiet udp://127.0.0.1:23000 2>/dev/null; then
+    echo "✓ Using UDP stream from streamer"
+    SDL_VIDEODRIVER=x11 ffplay -f mpegts -i "udp://127.0.0.1:23000" \
            -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+    SDL_VIDEODRIVER=fbdev ffplay -f mpegts -i "udp://127.0.0.1:23000" \
            -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
-    ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+    ffplay -f mpegts -i "udp://127.0.0.1:23000" \
            -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder &
 else
-    # Camera in top left
-    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
-    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder &
+    echo "⚠ No UDP stream available, using test pattern"
+    echo "  (Start streaming with web UI to see camera feed)"
+    # Test pattern placeholder when not streaming
+    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=15,drawtext=text='Start Streaming to Show Camera':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=15,drawtext=text='Start Streaming to Show Camera':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=15,drawtext=text='Start Streaming to Show Camera':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder &
 fi
 
 echo "Preview layout setup complete!"
