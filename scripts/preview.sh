@@ -45,18 +45,6 @@ pkill -f "chrome-wwats" 2>/dev/null || true
 pkill -f "chrome-webui" 2>/dev/null || true
 sleep 1
 
-# Calculate window layout dimensions
-fi
-
-# Check if camera is available
-if [[ -c "$VIDEO_DEV" ]]; then
-    echo "✓ Camera found at $VIDEO_DEV"
-    LOCAL_INPUT="$VIDEO_DEV"
-else
-    echo "⚠ No camera found at $VIDEO_DEV - using test pattern"
-    LOCAL_INPUT="testsrc"
-fi
-
 # Calculate layout dimensions
 # Left column: 480px wide (1/4 of 1920)
 # Right area: Remaining space for WWATS with proper aspect ratio
@@ -129,3 +117,6 @@ echo "- Web UI: Bottom left (${WEBUI_WIDTH}x${WEBUI_HEIGHT})"
 echo "- WWATS: Right side (${WWATS_WIDTH}x${WWATS_HEIGHT})"
 echo ""
 echo "Press Ctrl+C to close all windows and exit"
+
+# Wait for user to interrupt or processes to finish
+wait
