@@ -57,7 +57,7 @@ def build_rtmp_url(env: Env) -> str:
     return f"{base}/{cs}?token={tok}"
 
 def build_ffmpeg_cmd(env: Env):
-    """Build FFmpeg command with validation."""
+    """Build FFmpeg command with optimized low-latency settings."""
     # Validate required parameters
     video = env.get('VIDEO_DEV', '/dev/video0')
     if not os.path.exists(video):
@@ -65,19 +65,18 @@ def build_ffmpeg_cmd(env: Env):
     
     width = env.get('VIDEO_WIDTH', '1280')
     height = env.get('VIDEO_HEIGHT', '720')
-    fps = env.get('VIDEO_FPS', '30')
+    fps = env.get('VIDEO_FPS', '15')
     a_dev = env.get('AUDIO_DEV', 'default')
     a_rate = env.get('AUDIO_RATE', '48000')
-    bitrate = env.get('BITRATE', '2500k')
-    gop = env.get('GOP_SECONDS', '2')
-    profile = env.get('PROFILE', 'high')
+    bitrate = env.get('BITRATE', '1000k')
+    gop = env.get('GOP_SECONDS', '1')
     vf = env.get('VF_FILTER', '')
 
     # Build final RTMP URL
     rtmp = build_rtmp_url(env)
 
-    # Encoder selection (Pi does the H.264 encoding; camera is UVC only)
-    encoder = (env.get('ENCODER', 'h264_v4l2m2m') or 'h264_v4l2m2m').strip()
+    # Encoder selection
+    encoder = (env.get('ENCODER', 'libx264') or 'libx264').strip()
 
     # Optional explicit camera input format
     in_fmt = (env.get('VIDEO_INPUT_FORMAT', '') or '').strip()
@@ -86,57 +85,58 @@ def build_ffmpeg_cmd(env: Env):
     enable_tee = env.get('ENABLE_TEE_PREVIEW', '0') == '1'
     preview_url = env.get('PREVIEW_UDP_URL', 'udp://127.0.0.1:23000?pkt_size=1316')
 
+    # Calculate buffer size (half of bitrate for low latency)
+    bitrate_num = int(bitrate.rstrip('k')) if bitrate.endswith('k') else int(bitrate)
+    bufsize = f"{bitrate_num // 2}k"
+
     cmd = [
-        'ffmpeg', '-hide_banner', '-loglevel', 'warning',
-        '-thread_queue_size', '1024',
-        '-f', 'v4l2'
-    ]
-    if in_fmt:
-        cmd += ['-input_format', in_fmt]
-    cmd += [
-        '-framerate', str(fps),
-        '-video_size', f'{width}x{height}',
+        'ffmpeg',
+        '-f', 'v4l2', '-input_format', in_fmt or 'mjpeg', '-framerate', str(fps), '-video_size', f'{width}x{height}',
+        '-thread_queue_size', '4096', '-probesize', '32k', '-analyzeduration', '0', 
+        '-fflags', '+discardcorrupt', '-flags', 'low_delay',
         '-i', video,
-        '-thread_queue_size', '1024',
-        '-f', 'alsa', '-ar', str(a_rate), '-i', a_dev
+        '-f', 'alsa', '-ar', str(a_rate), '-thread_queue_size', '4096', '-i', a_dev
     ]
+
+    # Video filter for format and fps
+    vf_filter = f"format=yuv420p,fps={fps}"
+    if vf:
+        vf_filter = f"{vf},{vf_filter}"
+    
+    cmd += ['-vf', vf_filter, '-fps_mode', 'cfr']
 
     # Video encoder config
     if encoder == 'libx264':
-        # Build video filter chain
-        vf_chain = f'scale={width}:{height}:in_range=full:out_range=tv,format=yuv420p'
-        if vf:
-            vf_chain = f'{vf},{vf_chain}'
-        
         cmd += [
-            '-vf', vf_chain,
             '-c:v', 'libx264',
-            '-preset', 'veryfast',
+            '-preset', 'ultrafast',
             '-tune', 'zerolatency',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', str(int(bitrate.replace('k', '')) * 2) + 'k',
+            '-pix_fmt', 'yuv420p',
+            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bufsize,
             '-g', str(int(fps) * int(gop)),
-            '-pix_fmt', 'yuv420p'
+            '-keyint_min', str(int(fps) * int(gop)),
+            '-sc_threshold', '0',
+            '-x264-params', f'keyint={int(fps) * int(gop)}:min-keyint={int(fps) * int(gop)}:scenecut=0:vbv-maxrate={bitrate_num}:vbv-bufsize={bitrate_num // 2}:nal-hrd=cbr:aud=1:repeat-headers=1'
         ]
-        # Only add profile if it's not empty
-        if profile and profile.strip():
-            cmd += ['-profile:v', profile]
     else:
         cmd += [
             '-c:v', 'h264_v4l2m2m',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', str(int(bitrate.replace('k', '')) * 2) + 'k',
+            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bufsize,
             '-pix_fmt', 'yuv420p',
             '-g', str(int(fps) * int(gop))
         ]
-        # Only add profile if it's not empty
-        if profile and profile.strip():
-            cmd += ['-profile:v', profile]
-        
-        # Add custom video filters for hardware encoder if specified
-        if vf:
-            cmd += ['-vf', vf]
 
-    # Audio encode (AAC with proper sample rate)
-    cmd += ['-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-ar', str(a_rate)]
+    # Audio encode (AAC with optimizations)
+    cmd += [
+        '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-ar', str(a_rate),
+        '-af', 'aresample=async=1:first_pts=0'
+    ]
+
+    # Output flags for low latency
+    cmd += [
+        '-fflags', '+genpts', '-use_wallclock_as_timestamps', '1',
+        '-muxdelay', '0', '-muxpreload', '0'
+    ]
 
     # Outputs
     if enable_tee:
