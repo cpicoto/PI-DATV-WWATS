@@ -45,9 +45,9 @@ CAMERA_Y=$((WEB_UI_Y + PIP_HEIGHT + 10)) # 10px gap between web UI and camera
 echo "Opening WWATS interface full-screen (background)..."
 # Open browser with WWATS interface full-screen as background
 if command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --kiosk "$REMOTE_URL" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-wwats --kiosk "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
-    DISPLAY=:0 firefox --kiosk "$REMOTE_URL" &
+    DISPLAY=:0 firefox --new-instance --kiosk "$REMOTE_URL" &
 else
     echo "No browser found - install chromium-browser or firefox"
     exit 1
@@ -57,11 +57,11 @@ fi
 sleep 3
 
 echo "Opening local web UI in overlay window..."
-# Open local web UI in small window (for Start/Stop buttons)
+# Open local web UI in small window (for Start/Stop buttons) - separate browser instance
 if command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --new-window --window-position=${WEB_UI_X},${WEB_UI_Y} --window-size=${PIP_WIDTH},${PIP_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEB_UI_X},${WEB_UI_Y} --window-size=${PIP_WIDTH},${PIP_HEIGHT} "http://localhost:8080" &
 elif command -v firefox >/dev/null 2>&1; then
-    DISPLAY=:0 firefox --new-window "http://localhost:8080" &
+    DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
 
 # Wait for web UI to load
