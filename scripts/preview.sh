@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Simple split-screen preview: camera on left, WWATS website on right
+# Simple split-screen preview: raw camera on left, WWATS website on right
 set -euo pipefail
 source /etc/rtmp-streamer.env
-: "${PREVIEW_UDP_URL:=udp://127.0.0.1:23000}"
+: "${VIDEO_DEV:=/dev/video0}"
 : "${REMOTE_URL:=https://streaming.wwats.net/}"
 : "${SCREEN_W:=1920}"; : "${SCREEN_H:=1080}"
 
@@ -13,12 +13,12 @@ export DISPLAY=${DISPLAY:-:0}
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/tmp/runtime-$(id -u)}
 mkdir -p "$XDG_RUNTIME_DIR"
 
-# Check if local UDP stream is available
-if ss -uln 2>/dev/null | grep -q ":23000 " || netstat -uln 2>/dev/null | grep -q ":23000 "; then
-    echo "✓ Local UDP stream detected"
-    LOCAL_INPUT="${PREVIEW_UDP_URL}"
+# Check if camera is available
+if [[ -c "$VIDEO_DEV" ]]; then
+    echo "✓ Camera found at $VIDEO_DEV"
+    LOCAL_INPUT="$VIDEO_DEV"
 else
-    echo "⚠ No local UDP stream found - using test pattern"
+    echo "⚠ No camera found at $VIDEO_DEV - using test pattern"
     LOCAL_INPUT="testsrc"
 fi
 
@@ -37,10 +37,10 @@ else
 fi
 
 echo "Starting camera preview (left side)..."
-# Start camera preview on left side
+# Start raw camera preview on left side
 if [[ "$LOCAL_INPUT" == "testsrc" ]]; then
     ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
            -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
 else
-    ffplay -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
+    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
 fi
