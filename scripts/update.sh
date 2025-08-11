@@ -34,21 +34,36 @@ sudo cp -v scripts/preview-browser.sh /opt/pi-datv-wwats/ 2>/dev/null || echo "p
 sudo chmod +x /opt/pi-datv-wwats/*.sh /opt/pi-datv-wwats/*.py
 
 # Update systemd service files if they changed
+CURRENT_USER=$(whoami)
+CURRENT_GROUP=$(id -gn)
+
 if ! diff -q services/rtmp-streamer.service /etc/systemd/system/rtmp-streamer.service >/dev/null 2>&1; then
     echo "Updating rtmp-streamer.service..."
     sudo cp services/rtmp-streamer.service /etc/systemd/system/
+    # Fix user/group in the service file
+    sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-streamer.service
+    sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-streamer.service
+    sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-streamer.service
     RELOAD_SYSTEMD=1
 fi
 
 if ! diff -q services/rtmp-preview.service /etc/systemd/system/rtmp-preview.service >/dev/null 2>&1; then
     echo "Updating rtmp-preview.service..."
     sudo cp services/rtmp-preview.service /etc/systemd/system/
+    # Fix user/group in the service file
+    sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-preview.service
+    sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-preview.service
+    sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-preview.service
     RELOAD_SYSTEMD=1
 fi
 
 if ! diff -q services/rtmp-ui.service /etc/systemd/system/rtmp-ui.service >/dev/null 2>&1; then
     echo "Updating rtmp-ui.service..."
     sudo cp services/rtmp-ui.service /etc/systemd/system/
+    # Fix user/group in the service file
+    sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-ui.service
+    sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-ui.service
+    sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-ui.service
     RELOAD_SYSTEMD=1
 fi
 
