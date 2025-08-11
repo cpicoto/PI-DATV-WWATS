@@ -22,10 +22,10 @@ fi
 echo
 
 echo "3. Command File Status:"
-if [ -f "/tmp/rtmp-command.txt" ]; then
-    echo "✓ Command file exists: $(cat /tmp/rtmp-command.txt)"
+if [ -f "/home/datv/rtmp-command.txt" ]; then
+    echo "✓ Command file exists: $(cat /home/datv/rtmp-command.txt)"
 else
-    echo "✗ No command file at /tmp/rtmp-command.txt"
+    echo "✗ No command file at /home/datv/rtmp-command.txt"
 fi
 echo
 

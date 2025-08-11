@@ -39,7 +39,7 @@ app = Flask(__name__)
 
 SERVICE = 'rtmp-streamer.service'
 STATUS_FILE = '/run/rtmp-status.txt'
-COMMAND_FILE = '/tmp/rtmp-command.txt'
+COMMAND_FILE = '/home/datv/rtmp-command.txt'
 
 def svc(cmd):
     return subprocess.run(['systemctl', cmd, SERVICE], capture_output=True, text=True)
