@@ -77,7 +77,12 @@ echo "Step 6/7: Installing systemd services..."
 USER_GROUP=$(id -gn "$REAL_USER")
 for service in rtmp-streamer rtmp-preview rtmp-ui; do
     echo "Installing ${service}.service for user $REAL_USER (group: $USER_GROUP)..."
-    sed -e "s/User=pi/User=$REAL_USER/g" -e "s/Group=video/Group=$USER_GROUP/g" "services/${service}.service" > "/etc/systemd/system/${service}.service"
+    # Replace user and group settings, and comment out SupplementaryGroups (user already has group memberships)
+    sed -e "s/User=pi/User=$REAL_USER/g" \
+        -e "s/Group=pi/Group=$USER_GROUP/g" \
+        -e "s/Group=video/Group=$USER_GROUP/g" \
+        -e "s/^SupplementaryGroups=/#SupplementaryGroups=/" \
+        "services/${service}.service" > "/etc/systemd/system/${service}.service"
     chmod 0644 "/etc/systemd/system/${service}.service"
 done
 
