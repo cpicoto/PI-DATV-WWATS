@@ -40,6 +40,11 @@ echo "Step 4/7: Creating application directory and copying files..."
 mkdir -p /opt/pi-datv-wwats
 cp -a app/. /opt/pi-datv-wwats/
 
+# Set correct permissions for Python scripts
+chmod +x /opt/pi-datv-wwats/streamer.py
+chmod +x /opt/pi-datv-wwats/rtmp-ui.py
+echo "✓ Application files installed with correct permissions"
+
 echo "Step 5/7: Setting up configuration..."
 if [ ! -f /etc/rtmp-streamer.env ]; then
     mkdir -p /etc
