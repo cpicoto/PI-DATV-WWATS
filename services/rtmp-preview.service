@@ -8,7 +8,7 @@ Type=simple
 EnvironmentFile=/etc/rtmp-streamer.env
 ExecStart=/opt/pi-datv-wwats/preview.sh
 User=datv
-Group=video
+Group=datv
 Environment=SDL_VIDEODRIVER=x11
 Restart=always
 RestartSec=2

@@ -11,8 +11,8 @@ WorkingDirectory=/opt/pi-datv-wwats
 Restart=always
 RestartSec=3
 User=datv
-Group=video
-SupplementaryGroups=audio,plugdev,render,input,gpio
+Group=datv
+SupplementaryGroups=video,audio,plugdev,render,input,gpio
 
 [Install]
 WantedBy=multi-user.target
