@@ -17,7 +17,12 @@ echo "Display environment: DISPLAY=$DISPLAY, XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
 # Check if local UDP stream is available
 echo "Checking for local UDP stream..."
-if ss -ulpn 2>/dev/null | grep -q ":23000 " || netstat -uln 2>/dev/null | grep -q ":23000 "; then
+echo "Debug: Checking with ss command..."
+ss -uln 2>/dev/null | grep ":23000 " && echo "ss found port 23000" || echo "ss did not find port 23000"
+echo "Debug: Checking with netstat command..."
+netstat -uln 2>/dev/null | grep ":23000 " && echo "netstat found port 23000" || echo "netstat did not find port 23000"
+
+if ss -uln 2>/dev/null | grep -q ":23000 " || netstat -uln 2>/dev/null | grep -q ":23000 "; then
     echo "✓ Local UDP stream detected"
     LOCAL_INPUT="${PREVIEW_UDP_URL}"
 else
@@ -27,15 +32,20 @@ fi
 
 # Check remote stream accessibility 
 echo "Checking remote stream..."
-if timeout 5s ffprobe -v quiet "${REMOTE_URL}/index.m3u8" 2>/dev/null; then
-    echo "✓ Remote HLS stream accessible"
-    REMOTE_INPUT="${REMOTE_URL}/index.m3u8"
-elif timeout 5s ffprobe -v quiet "${REMOTE_URL}" 2>/dev/null; then
-    echo "✓ Remote stream accessible"
+# Try direct URL first (main stream interface)
+if timeout 5s ffprobe -v quiet "${REMOTE_URL}" 2>/dev/null; then
+    echo "✓ Remote stream accessible (direct URL)"
     REMOTE_INPUT="${REMOTE_URL}"
 else
-    echo "⚠ Remote stream not accessible - using test pattern"
-    REMOTE_INPUT="testsrc"
+    # Try HLS format as fallback
+    HLS_URL="${REMOTE_URL%/}/index.m3u8"  # Remove trailing slash to avoid double slash
+    if timeout 5s ffprobe -v quiet "$HLS_URL" 2>/dev/null; then
+        echo "✓ Remote HLS stream accessible"
+        REMOTE_INPUT="$HLS_URL"
+    else
+        echo "⚠ Remote stream not accessible (tried both direct and HLS) - using test pattern"
+        REMOTE_INPUT="testsrc"
+    fi
 fi
 
 echo "Local input: $LOCAL_INPUT"
@@ -59,12 +69,15 @@ elif [[ "$LOCAL_INPUT" != "testsrc" ]] && [[ "$REMOTE_INPUT" != "testsrc" ]]; th
     exec ffplay -i "$LOCAL_INPUT" -i "$REMOTE_INPUT" -filter_complex "$FILTER" -map "[out]" -fs -autoexit 0
     
 else
-    # Mixed mode - fallback to single stream
+    # Mixed mode - fallback to single stream or web interface
     if [[ "$LOCAL_INPUT" != "testsrc" ]]; then
-        echo "Using local stream only"
-        exec ffplay -i "$LOCAL_INPUT" -fs -autoexit 0
+        echo "Using local stream only (remote appears to be web interface, not video stream)"
+        echo "Command: ffplay \"$LOCAL_INPUT\" -fs -autoexit 0"
+        exec ffplay "$LOCAL_INPUT" -fs -autoexit 0
     else
-        echo "Using remote stream only"
-        exec ffplay -i "$REMOTE_INPUT" -fs -autoexit 0
+        echo "No video streams available - the remote URL appears to be a web interface"
+        echo "Consider opening $REMOTE_URL in a browser for monitoring"
+        # Show test pattern with instruction
+        exec ffplay -f lavfi -i "testsrc=duration=3600:size=${SCREEN_W}:${SCREEN_H}:rate=30,drawtext=text='No video streams available\nOpen ${REMOTE_URL} in browser for monitoring':fontfile=${OVERLAY_FONT}:x=50:y=50:fontsize=24:fontcolor=white" -fs -autoexit 0
     fi
 fi
