@@ -103,36 +103,47 @@ def build_ffmpeg_cmd(env: Env):
 
     # Video encoder config
     if encoder == 'libx264':
+        # Build video filter chain
+        vf_chain = f'scale={width}:{height}:in_range=full:out_range=tv,format=yuv420p'
+        if vf:
+            vf_chain = f'{vf},{vf_chain}'
+        
         cmd += [
+            '-vf', vf_chain,
             '-c:v', 'libx264',
             '-preset', 'veryfast',
             '-tune', 'zerolatency',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bitrate,
-            '-pix_fmt', 'yuv420p',
+            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', str(int(bitrate.replace('k', '')) * 2) + 'k',
             '-g', str(int(fps) * int(gop)),
-            '-profile:v', profile
+            '-pix_fmt', 'yuv420p'
         ]
+        # Only add profile if it's not empty
+        if profile and profile.strip():
+            cmd += ['-profile:v', profile]
     else:
         cmd += [
             '-c:v', 'h264_v4l2m2m',
-            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', bitrate,
+            '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', str(int(bitrate.replace('k', '')) * 2) + 'k',
             '-pix_fmt', 'yuv420p',
-            '-g', str(int(fps) * int(gop)),
-            '-profile:v', profile
+            '-g', str(int(fps) * int(gop))
         ]
+        # Only add profile if it's not empty
+        if profile and profile.strip():
+            cmd += ['-profile:v', profile]
+        
+        # Add custom video filters for hardware encoder if specified
+        if vf:
+            cmd += ['-vf', vf]
 
-    # Audio encode (AAC)
-    cmd += ['-c:a', 'aac', '-b:a', '128k', '-ac', '2']
-
-    if vf:
-        cmd += ['-vf', vf]
+    # Audio encode (AAC with proper sample rate)
+    cmd += ['-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-ar', str(a_rate)]
 
     # Outputs
     if enable_tee:
-        tee_spec = f"[f=flv]{rtmp}|[f=mpegts]{preview_url}"
+        tee_spec = f"[f=flv:rtmp_live=live]{rtmp}|[f=mpegts]{preview_url}"
         cmd += ['-f', 'tee', tee_spec]
     else:
-        cmd += ['-f', 'flv', rtmp]
+        cmd += ['-f', 'flv', '-rtmp_live', 'live', rtmp]
 
     return cmd
 
