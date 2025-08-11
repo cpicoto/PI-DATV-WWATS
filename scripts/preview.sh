@@ -85,12 +85,12 @@ sleep 3
 
 echo "Opening local web UI (bottom left)..."
 # Open local web UI in bottom left area
-if command -v firefox >/dev/null 2>&1; then
-    DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
-elif command -v chromium >/dev/null 2>&1; then
+if command -v chromium >/dev/null 2>&1; then
     DISPLAY=:0 chromium --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
 elif command -v chromium-browser >/dev/null 2>&1; then
     DISPLAY=:0 chromium-browser --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
+elif command -v firefox >/dev/null 2>&1; then
+    DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
 
 # Wait for web UI to load
