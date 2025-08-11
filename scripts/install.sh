@@ -50,10 +50,13 @@ if [ ! -f /etc/rtmp-streamer.env ]; then
     mkdir -p /etc
     cp config/rtmp-streamer.env.sample /etc/rtmp-streamer.env
     chmod 600 /etc/rtmp-streamer.env
+    chown "$REAL_USER:$REAL_USER" /etc/rtmp-streamer.env
     echo "✓ Created /etc/rtmp-streamer.env"
     echo "  IMPORTANT: Edit this file to set your CALLSIGN and TOKEN!"
 else
     echo "✓ Configuration file /etc/rtmp-streamer.env already exists"
+    # Ensure correct ownership for existing file
+    chown "$REAL_USER:$REAL_USER" /etc/rtmp-streamer.env
 fi
 
 # Optional udev rules
@@ -70,9 +73,12 @@ echo "Installing preview script..."
 install -m 0755 scripts/preview.sh /opt/pi-datv-wwats/preview.sh
 
 echo "Step 6/7: Installing systemd services..."
-install -m 0644 services/rtmp-streamer.service /etc/systemd/system/
-install -m 0644 services/rtmp-preview.service  /etc/systemd/system/
-install -m 0644 services/rtmp-ui.service       /etc/systemd/system/
+# Install and customize service files with correct user
+for service in rtmp-streamer rtmp-preview rtmp-ui; do
+    echo "Installing ${service}.service for user $REAL_USER..."
+    sed "s/User=pi/User=$REAL_USER/g" "services/${service}.service" > "/etc/systemd/system/${service}.service"
+    chmod 0644 "/etc/systemd/system/${service}.service"
+done
 
 # Set up user permissions
 echo "Setting up user permissions for $REAL_USER..."
