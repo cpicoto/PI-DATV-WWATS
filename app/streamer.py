@@ -115,12 +115,15 @@ def build_ffmpeg_cmd(env: Env):
         '-ac', '2'
     ]
     
-    # Output with your proven tee structure
+    # Output with proper stream mapping for tee
     if enable_tee:
+        # Map video and audio streams explicitly for tee
+        cmd += ['-map', '0:v:0', '-map', '1:a:0']
         tee_spec = f"[f=flv]{rtmp}|[f=mpegts]{preview_url}"
         cmd += ['-f', 'tee', tee_spec]
     else:
-        cmd += ['-f', 'flv', rtmp]
+        # Simple single output
+        cmd += ['-map', '0:v:0', '-map', '1:a:0', '-f', 'flv', rtmp]
 
     return cmd
 
