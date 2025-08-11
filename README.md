@@ -120,6 +120,7 @@ PI-DATV-WWATS/
 sudo apt-get update && sudo apt-get install -y git
 git clone https://github.com/cpicoto/PI-DATV-WWATS.git
 cd PI-DATV-WWATS
+chmod 755 ./scripts/*
 ./scripts/check-system.sh
 ```
 

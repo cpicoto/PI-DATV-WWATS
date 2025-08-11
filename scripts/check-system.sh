@@ -141,9 +141,26 @@ echo "Checking network connectivity..."
 if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
     echo "✓ Internet connectivity: available"
     
-    # Test if we can resolve the streaming server
-    if nslookup streaming.wwats.net >/dev/null 2>&1 || host streaming.wwats.net >/dev/null 2>&1; then
-        echo "✓ WWATS streaming server: DNS resolves"
+    # Test if we can resolve the streaming server - try multiple methods
+    RESOLVED_IP=""
+    if command -v nslookup >/dev/null 2>&1; then
+        RESOLVED_IP=$(nslookup streaming.wwats.net 2>/dev/null | grep -A1 "Name:" | grep "Address:" | awk '{print $2}' | head -1)
+    fi
+    
+    if [ -z "$RESOLVED_IP" ] && command -v host >/dev/null 2>&1; then
+        RESOLVED_IP=$(host streaming.wwats.net 2>/dev/null | grep "has address" | awk '{print $4}' | head -1)
+    fi
+    
+    if [ -z "$RESOLVED_IP" ] && command -v dig >/dev/null 2>&1; then
+        RESOLVED_IP=$(dig +short streaming.wwats.net 2>/dev/null | head -1)
+    fi
+    
+    if [ -z "$RESOLVED_IP" ] && command -v getent >/dev/null 2>&1; then
+        RESOLVED_IP=$(getent hosts streaming.wwats.net 2>/dev/null | awk '{print $1}' | head -1)
+    fi
+    
+    if [ -n "$RESOLVED_IP" ]; then
+        echo "✓ WWATS streaming server: DNS resolves to $RESOLVED_IP"
         
         # Try to test RTMP port if nc is available
         if command -v nc >/dev/null 2>&1; then
@@ -159,9 +176,9 @@ if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
         fi
     else
         echo "⚠ WARNING: Cannot resolve streaming.wwats.net"
-        echo "  This may be a temporary DNS issue or the domain may have changed"
-        echo "  Try: 'nslookup streaming.wwats.net 8.8.8.8' to test with Google DNS"
-        echo "  Streaming may still work if the server is accessible by IP"
+        echo "  This may be a temporary DNS issue"
+        echo "  Try: 'ping streaming.wwats.net' or 'traceroute streaming.wwats.net' to test"
+        echo "  Streaming may still work if the server is accessible"
     fi
 else
     echo "❌ WARNING: No internet connectivity detected"
