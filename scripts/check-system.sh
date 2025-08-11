@@ -25,7 +25,9 @@ else
     echo "  Detected: $PI_MODEL"
     echo "  This project is designed specifically for Raspberry Pi hardware"
     exit 1
-fi# Check OS
+fi
+
+# Check OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     echo "✓ OS: $PRETTY_NAME"
@@ -54,7 +56,6 @@ else
     echo "❌ WARNING: Architecture $ARCH may not be compatible"
 fi
 
-# Check for required commands
 echo
 echo "Checking system dependencies..."
 
@@ -91,7 +92,6 @@ else
     echo "❌ ffmpeg: missing (will be installed)"
 fi
 
-# Check for USB cameras
 echo
 echo "Checking for USB video devices..."
 
@@ -111,7 +111,6 @@ else
     echo "  Please connect a UVC-compatible USB camera"
 fi
 
-# Check audio devices
 echo
 echo "Checking audio devices..."
 
@@ -129,7 +128,6 @@ else
     echo "  Check if your camera has a built-in microphone or connect a USB microphone"
 fi
 
-# Check network connectivity
 echo
 echo "Checking network connectivity..."
 
@@ -162,7 +160,6 @@ else
     echo "  Check network connection - internet required for streaming"
 fi
 
-# Check GPIO access
 echo
 echo "Checking GPIO access..."
 
@@ -181,7 +178,6 @@ else
     echo "  This is required for button control"
 fi
 
-# Check disk space
 echo
 echo "Checking disk space..."
 
@@ -210,7 +206,6 @@ else
     echo "  4GB+ recommended for reliable streaming"
 fi
 
-# Summary
 echo
 echo "=== Summary ==="
 
