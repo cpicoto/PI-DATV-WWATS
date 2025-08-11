@@ -36,8 +36,14 @@ if [ -f /etc/os-release ]; then
     if [[ "$ID" == "raspbian" ]] || [[ "$NAME" == *"Raspberry Pi OS"* ]] || [[ "$PRETTY_NAME" == *"Raspberry Pi OS"* ]]; then
         echo "✓ Running Raspberry Pi OS (recommended)"
     elif [[ "$ID" == "debian" ]] && [[ "$VERSION_CODENAME" == "bookworm" ]]; then
-        echo "⚠ WARNING: Debian detected instead of Raspberry Pi OS"
-        echo "  This may work but Raspberry Pi OS is recommended for best compatibility"
+        # Check if this is actually a Pi with Raspberry Pi hardware support
+        if [ -d /boot/firmware ] || [ -f /boot/config.txt ] || [ -d /sys/firmware/devicetree/base ]; then
+            echo "✓ Running Debian on Raspberry Pi hardware (compatible)"
+            echo "  Note: This appears to be Debian configured for Raspberry Pi"
+        else
+            echo "⚠ WARNING: Standard Debian detected"
+            echo "  Raspberry Pi OS is recommended for best hardware support"
+        fi
     else
         echo "❌ WARNING: Unsupported OS detected"
         echo "  Raspberry Pi OS Bookworm is recommended"
@@ -136,7 +142,7 @@ if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
     echo "✓ Internet connectivity: available"
     
     # Test if we can resolve the streaming server
-    if nslookup streaming.wwats.net >/dev/null 2>&1; then
+    if nslookup streaming.wwats.net >/dev/null 2>&1 || host streaming.wwats.net >/dev/null 2>&1; then
         echo "✓ WWATS streaming server: DNS resolves"
         
         # Try to test RTMP port if nc is available
@@ -152,8 +158,10 @@ if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
             echo "  This is normal and doesn't affect streaming functionality"
         fi
     else
-        echo "❌ WARNING: Cannot resolve streaming.wwats.net"
-        echo "  Check DNS settings or internet connection"
+        echo "⚠ WARNING: Cannot resolve streaming.wwats.net"
+        echo "  This may be a temporary DNS issue or the domain may have changed"
+        echo "  Try: 'nslookup streaming.wwats.net 8.8.8.8' to test with Google DNS"
+        echo "  Streaming may still work if the server is accessible by IP"
     fi
 else
     echo "❌ WARNING: No internet connectivity detected"
