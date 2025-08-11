@@ -23,7 +23,7 @@ fi
 echo "Updating application files..."
 
 # Copy updated Python apps
-sudo cp -v app/streammer.py /opt/pi-datv-wwats/
+sudo cp -v app/streamer.py /opt/pi-datv-wwats/
 sudo cp -v app/rtmp-ui.py /opt/pi-datv-wwats/
 
 # Copy updated scripts  
