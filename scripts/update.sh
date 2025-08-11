@@ -50,6 +50,7 @@ if ! diff -q services/rtmp-streamer.service /etc/systemd/system/rtmp-streamer.se
     sudo cp services/rtmp-streamer.service /etc/systemd/system/
     # Fix user/group in the service file
     sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-streamer.service
+    sudo sed -i "s/^Group=pi$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-streamer.service
     sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-streamer.service
     sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-streamer.service
     RELOAD_SYSTEMD=1
@@ -60,6 +61,7 @@ if ! diff -q services/rtmp-preview.service /etc/systemd/system/rtmp-preview.serv
     sudo cp services/rtmp-preview.service /etc/systemd/system/
     # Fix user/group in the service file
     sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-preview.service
+    sudo sed -i "s/^Group=pi$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-preview.service
     sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-preview.service
     sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-preview.service
     RELOAD_SYSTEMD=1
@@ -70,6 +72,7 @@ if ! diff -q services/rtmp-ui.service /etc/systemd/system/rtmp-ui.service >/dev/
     sudo cp services/rtmp-ui.service /etc/systemd/system/
     # Fix user/group in the service file
     sudo sed -i "s/^User=pi$/User=$CURRENT_USER/" /etc/systemd/system/rtmp-ui.service
+    sudo sed -i "s/^Group=pi$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-ui.service
     sudo sed -i "s/^Group=video$/Group=$CURRENT_GROUP/" /etc/systemd/system/rtmp-ui.service
     sudo sed -i '/^SupplementaryGroups=/d' /etc/systemd/system/rtmp-ui.service
     RELOAD_SYSTEMD=1
