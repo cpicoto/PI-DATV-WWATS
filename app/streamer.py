@@ -119,7 +119,7 @@ def build_ffmpeg_cmd(env: Env):
     if enable_tee:
         # Map video and audio streams explicitly for tee
         cmd += ['-map', '0:v:0', '-map', '1:a:0']
-        tee_spec = f"[f=flv]{rtmp}|[f=mpegts]{preview_url}"
+        tee_spec = f'"[f=flv]{rtmp}|[f=mpegts]{preview_url}"'
         cmd += ['-f', 'tee', tee_spec]
     else:
         # Simple single output
