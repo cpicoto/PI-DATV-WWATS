@@ -38,7 +38,7 @@ TEMPLATE = """
 app = Flask(__name__)
 
 SERVICE = 'rtmp-streamer.service'
-STATUS_FILE = '/run/rtmp-status.txt'
+STATUS_FILE = '/home/datv/rtmp-status.txt'
 COMMAND_FILE = '/home/datv/rtmp-command.txt'
 
 def svc(cmd):

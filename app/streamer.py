@@ -13,7 +13,7 @@ from pathlib import Path
 from gpiozero import Button, LED, GPIOPinInUse
 
 CONFIG_PATH = "/etc/rtmp-streamer.env"
-STATUS_PATH = "/run/rtmp-status.txt"
+STATUS_PATH = "/home/datv/rtmp-status.txt"
 COMMAND_PATH = "/home/datv/rtmp-command.txt"
 
 # Set up logging
@@ -91,11 +91,22 @@ def build_ffmpeg_cmd(env: Env):
 
     cmd = [
         'ffmpeg',
-        '-f', 'v4l2', '-input_format', in_fmt or 'mjpeg', '-framerate', str(fps), '-video_size', f'{width}x{height}',
-        '-thread_queue_size', '4096', '-probesize', '32k', '-analyzeduration', '0', 
-        '-fflags', '+discardcorrupt', '-flags', 'low_delay',
+        # Video input with optimizations (your improved settings)
+        '-f', 'v4l2',
+        '-input_format', in_fmt or 'mjpeg',
+        '-framerate', str(fps),
+        '-video_size', f'{width}x{height}',
+        '-thread_queue_size', '4096',
+        '-probesize', '32k',
+        '-analyzeduration', '0',
+        '-fflags', '+discardcorrupt',
+        '-flags', 'low_delay',
         '-i', video,
-        '-f', 'alsa', '-ar', str(a_rate), '-thread_queue_size', '4096', '-i', a_dev
+        # Audio input with optimizations
+        '-f', 'alsa',
+        '-ar', str(a_rate),
+        '-thread_queue_size', '4096',
+        '-i', a_dev
     ]
 
     # Video filter for format and fps

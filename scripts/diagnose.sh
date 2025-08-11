@@ -30,11 +30,11 @@ fi
 echo
 
 echo "4. Status File:"
-if [ -f "/run/rtmp-status.txt" ]; then
+if [ -f "/home/datv/rtmp-status.txt" ]; then
     echo "✓ Status file exists:"
-    cat /run/rtmp-status.txt
+    cat /home/datv/rtmp-status.txt
 else
-    echo "✗ No status file at /run/rtmp-status.txt"
+    echo "✗ No status file at /home/datv/rtmp-status.txt"
 fi
 echo
 
