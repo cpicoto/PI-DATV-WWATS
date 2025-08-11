@@ -1,23 +1,5 @@
 #!/usr/bin/env bash
-# Clean# Check if camera is available
-if [[ -c "$VIDEO_DEV" ]]; then
-    echo "✓ Camera found at $VIDEO_DEV"
-    LOCAL_INPUT="$VIDEO_DEV"
-else
-    echo "⚠ Camera not found at $VIDEO_DEV, using test pattern"
-    LOCAL_INPUT="testsrc"
-fi
-
-echo "Configuration:"
-echo "- REMOTE_URL: $REMOTE_URL"
-echo "- LOCAL_INPUT: $LOCAL_INPUT"
-echo "- Screen: ${SCREEN_W}x${SCREEN_H}"
-
-# Clean up any existing browser processes to avoid conflicts
-echo "Cleaning up existing browser processes..."
-pkill -f "chrome-wwats" 2>/dev/null || true
-pkill -f "chrome-webui" 2>/dev/null || true
-sleep 1 WWATS (right) + Camera + Web UI (left column)
+# Clean layout: WWATS (right) + Camera + Web UI (left column)
 set -euo pipefail
 source /etc/rtmp-streamer.env
 : "${VIDEO_DEV:=/dev/video0}"
@@ -41,6 +23,29 @@ fi
 # Add current user to X11 access if possible
 if command -v xhost >/dev/null 2>&1; then
     xhost +local: 2>/dev/null || true
+fi
+
+# Check if camera is available
+if [[ -c "$VIDEO_DEV" ]]; then
+    echo "✓ Camera found at $VIDEO_DEV"
+    LOCAL_INPUT="$VIDEO_DEV"
+else
+    echo "⚠ Camera not found at $VIDEO_DEV, using test pattern"
+    LOCAL_INPUT="testsrc"
+fi
+
+echo "Configuration:"
+echo "- REMOTE_URL: $REMOTE_URL"
+echo "- LOCAL_INPUT: $LOCAL_INPUT"
+echo "- Screen: ${SCREEN_W}x${SCREEN_H}"
+
+# Clean up any existing browser processes to avoid conflicts
+echo "Cleaning up existing browser processes..."
+pkill -f "chrome-wwats" 2>/dev/null || true
+pkill -f "chrome-webui" 2>/dev/null || true
+sleep 1
+
+# Calculate window layout dimensions
 fi
 
 # Check if camera is available
