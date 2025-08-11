@@ -73,10 +73,11 @@ echo "Installing preview script..."
 install -m 0755 scripts/preview.sh /opt/pi-datv-wwats/preview.sh
 
 echo "Step 6/7: Installing systemd services..."
-# Install and customize service files with correct user
+# Install and customize service files with correct user and group
+USER_GROUP=$(id -gn "$REAL_USER")
 for service in rtmp-streamer rtmp-preview rtmp-ui; do
-    echo "Installing ${service}.service for user $REAL_USER..."
-    sed "s/User=pi/User=$REAL_USER/g" "services/${service}.service" > "/etc/systemd/system/${service}.service"
+    echo "Installing ${service}.service for user $REAL_USER (group: $USER_GROUP)..."
+    sed -e "s/User=pi/User=$REAL_USER/g" -e "s/Group=video/Group=$USER_GROUP/g" "services/${service}.service" > "/etc/systemd/system/${service}.service"
     chmod 0644 "/etc/systemd/system/${service}.service"
 done
 
