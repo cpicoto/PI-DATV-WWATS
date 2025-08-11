@@ -70,9 +70,9 @@ WEBUI_HEIGHT=$((SCREEN_H - CAMERA_HEIGHT - 10))  # Remaining space
 echo "Opening WWATS interface (right side)..."
 # Open WWATS in windowed mode on the right side
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --disable-dev-shm-usage --disable-infobars --disable-web-security --app="$REMOTE_URL" --user-data-dir="$HOME/.chrome-wwats" --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} &
+    DISPLAY=:0 chromium --app="$REMOTE_URL" --user-data-dir="$HOME/.chrome-wwats" --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --disable-dev-shm-usage --disable-infobars --disable-web-security --app="$REMOTE_URL" --user-data-dir="$HOME/.chrome-wwats" --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} &
+    DISPLAY=:0 chromium-browser --app="$REMOTE_URL" --user-data-dir="$HOME/.chrome-wwats" --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "$REMOTE_URL" &
 else
@@ -86,9 +86,9 @@ sleep 3
 echo "Opening local web UI (bottom left)..."
 # Open local web UI in bottom left area
 if command -v chromium >/dev/null 2>&1; then
-    DISPLAY=:0 chromium --disable-dev-shm-usage --disable-infobars --disable-web-security --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
+    DISPLAY=:0 chromium --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
 elif command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --disable-dev-shm-usage --disable-infobars --disable-web-security --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
+    DISPLAY=:0 chromium-browser --app="http://localhost:8080" --user-data-dir="$HOME/.chrome-webui" --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
