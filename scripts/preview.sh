@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Simple split-screen preview: raw camera on left, WWATS website on right
+# PIP preview: WWATS full-screen with local camera overlay
 set -euo pipefail
 source /etc/rtmp-streamer.env
 : "${VIDEO_DEV:=/dev/video0}"
 : "${REMOTE_URL:=https://streaming.wwats.net/}"
 : "${SCREEN_W:=1920}"; : "${SCREEN_H:=1080}"
 
-echo "=== Simple Split-Screen Preview ==="
+echo "=== Picture-in-Picture Preview ==="
 
 # Set up display environment
 export DISPLAY=${DISPLAY:-:0}
@@ -34,33 +34,39 @@ else
     LOCAL_INPUT="testsrc"
 fi
 
-# Calculate window sizes for side-by-side display
-HALF_WIDTH=$((SCREEN_W / 2))
+# Calculate PIP size (1/4 of screen = 1/2 width and 1/2 height)
+PIP_WIDTH=$((SCREEN_W / 4))
+PIP_HEIGHT=$((SCREEN_H / 4))
+PIP_X=$((SCREEN_W - PIP_WIDTH - 20))  # 20px margin from right edge
+PIP_Y=20  # 20px margin from top edge
 
-echo "Opening WWATS interface in browser (right side)..."
-# Open browser with WWATS interface positioned on right side
+echo "Opening WWATS interface full-screen..."
+# Open browser with WWATS interface full-screen
 if command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --new-window --window-position=${HALF_WIDTH},0 --window-size=${HALF_WIDTH},${SCREEN_H} "$REMOTE_URL" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --kiosk "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
-    DISPLAY=:0 firefox --new-window "$REMOTE_URL" &
+    DISPLAY=:0 firefox --kiosk "$REMOTE_URL" &
 else
     echo "No browser found - install chromium-browser or firefox"
     exit 1
 fi
 
-echo "Starting camera preview (left side)..."
-# Start raw camera preview on left side with multiple fallback methods
+# Wait a moment for browser to start
+sleep 2
+
+echo "Starting camera PIP overlay (top-right corner)..."
+# Start camera as small overlay window
 if [[ "$LOCAL_INPUT" == "testsrc" ]]; then
-    # Try different video output methods
-    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
-           -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
-           -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0 2>/dev/null || \
-    ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
-           -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
+    # Try different video output methods for test pattern
+    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
+           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop 2>/dev/null || \
+    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
+           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop 2>/dev/null || \
+    ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
+           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop
 else
-    # Try different video output methods for camera
-    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0 2>/dev/null || \
-    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
+    # Try different video output methods for camera PIP
+    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop 2>/dev/null || \
+    SDL_VIDEODRIVER=fbdev ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop 2>/dev/null || \
+    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${PIP_X} -top ${PIP_Y} -alwaysontop
 fi
