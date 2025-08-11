@@ -14,7 +14,7 @@ FILTER="[0:v]setpts=PTS-STARTPTS,scale=${SCREEN_W}/2:${SCREEN_H}:force_original_
 [padded]drawtext=fontfile=${OVERLAY_FONT}:textfile=/run/rtmp-status.txt:reload=1:x=20:y=H-th-20:fontsize=24:fontcolor=white:box=1:boxborderw=10:boxcolor=black@0.5[out]"
 
 exec ffplay -loglevel error -fflags nobuffer -flags low_delay -fast -probesize 32 -analyzeduration 0 -autoexit 0 -fs \
-    -i "${PREVIEW_UDP_URL}?pkt_size=1316" \
+    -i "${PREVIEW_UDP_URL}" \
     -i "${REMOTE_URL}" \
     -filter_complex "${FILTER}" \
     -map "[out]"
