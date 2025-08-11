@@ -28,7 +28,7 @@ HALF_WIDTH=$((SCREEN_W / 2))
 echo "Opening WWATS interface in browser (right side)..."
 # Open browser with WWATS interface positioned on right side
 if command -v chromium-browser >/dev/null 2>&1; then
-    chromium-browser --new-window --window-position=${HALF_WIDTH},0 --window-size=${HALF_WIDTH},${SCREEN_H} "$REMOTE_URL" &
+    chromium-browser --no-sandbox --new-window --window-position=${HALF_WIDTH},0 --window-size=${HALF_WIDTH},${SCREEN_H} "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
     firefox --new-window "$REMOTE_URL" &
 else
@@ -37,10 +37,10 @@ else
 fi
 
 echo "Starting camera preview (left side)..."
-# Start raw camera preview on left side
+# Start raw camera preview on left side with SDL fallback
 if [[ "$LOCAL_INPUT" == "testsrc" ]]; then
-    ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
+    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${HALF_WIDTH}x${SCREEN_H}:rate=30" \
            -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
 else
-    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
+    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${HALF_WIDTH} -y ${SCREEN_H} -left 0 -top 0
 fi
