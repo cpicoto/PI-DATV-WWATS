@@ -59,6 +59,21 @@ else
     chown "$REAL_USER:$REAL_USER" /etc/rtmp-streamer.env
 fi
 
+# Clean up configuration file (remove inline comments that cause parsing errors)
+echo "Cleaning up configuration file format..."
+sed -i 's/#.*$//' /etc/rtmp-streamer.env
+sed -i 's/[[:space:]]*$//' /etc/rtmp-streamer.env
+sed -i '/^$/d' /etc/rtmp-streamer.env
+echo "✓ Configuration file cleaned up"
+
+# Create and set up status file for preview service
+echo "Setting up status file..."
+touch /run/rtmp-status.txt
+chown "$REAL_USER:$REAL_USER" /run/rtmp-status.txt
+chmod 644 /run/rtmp-status.txt
+echo "RTMP Streaming System Ready" > /run/rtmp-status.txt
+echo "✓ Status file created"
+
 # Optional udev rules
 if [ -f config/99-rtmp-cam.rules ]; then
     echo "Installing camera udev rules..."
