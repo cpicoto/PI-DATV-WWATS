@@ -18,12 +18,15 @@ This document explains the **simplified single-user model** for PI-DATV-WWATS.
 
 ## Service Configuration
 
-### All Services Run as datv
+### All Services Run as datv - CRITICAL GROUP SETTINGS
+
+⚠️ **REGRESSION ALERT**: This has been corrected TWICE already!
+
 ```ini
-# rtmp-streamer.service
+# rtmp-streamer.service - CORRECT CONFIGURATION
 User=datv
-Group=video
-SupplementaryGroups=audio,plugdev,render,input,gpio
+Group=datv                    # ← MUST be datv, NOT video!
+SupplementaryGroups=video,audio,plugdev,render,input,gpio
 
 # rtmp-ui.service  
 User=datv
@@ -31,7 +34,21 @@ Group=datv
 
 # rtmp-preview.service
 User=datv
-Group=video
+Group=datv                    # ← MUST be datv, NOT video!
+```
+
+### ❌ CRITICAL MISTAKE - DO NOT REPEAT:
+```ini
+# This causes status=216/GROUP error:
+Group=video    # WRONG! Causes systemd GROUP error
+```
+
+### ✅ CORRECT PATTERN:
+```ini
+# Primary group MUST match the user:
+User=datv
+Group=datv     # Same as user - prevents GROUP errors
+SupplementaryGroups=video,audio,plugdev,render,input,gpio  # Additional access
 ```
 
 ## Permission Model
@@ -62,7 +79,14 @@ sudo usermod -a -G video,audio,plugdev,gpio datv
 
 ## Common Mistakes to AVOID
 
-### ❌ DON'T: Use whoami in sudo scripts
+### ❌ REGRESSION #1: Wrong primary Group setting  
+```ini
+# This causes status=216/GROUP systemd error - FIXED TWICE!
+User=datv
+Group=video    # WRONG! Must be Group=datv
+```
+
+### ❌ REGRESSION #2: Use whoami in sudo scripts
 ```bash
 # This returns 'root' when script run with sudo
 REAL_USER=$(whoami)  # WRONG!
@@ -93,9 +117,11 @@ with open(file, 'w') as f:
 
 ## Troubleshooting
 
-### Service Won't Start (status=216/GROUP)
-- **Cause**: User not in required groups
-- **Fix**: Run `scripts/fix-single-user.sh`
+### Service Won't Start (status=216/GROUP) - REPEATED ISSUE!
+- **Cause**: Wrong Group= setting in service file (FIXED TWICE ALREADY!)
+- **Symptom**: `Group=video` instead of `Group=datv`
+- **Fix**: Ensure `Group=datv` matches `User=datv` in ALL service files
+- **Prevention**: Primary group MUST match the username!
 
 ### Permission Denied Errors
 - **Cause**: Files owned by wrong user
