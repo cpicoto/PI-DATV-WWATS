@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# PIP preview: WWATS full-screen + local web UI + camera overlay
+# Clean layout: WWATS (right) + Camera + Web UI (left column)
 set -euo pipefail
 source /etc/rtmp-streamer.env
 : "${VIDEO_DEV:=/dev/video0}"
 : "${REMOTE_URL:=https://streaming.wwats.net/}"
 : "${SCREEN_W:=1920}"; : "${SCREEN_H:=1080}"
 
-echo "=== Picture-in-Picture Preview (WWATS + Web UI + Camera) ==="
+echo "=== Clean Layout Preview (WWATS + Camera + Web UI) ==="
 
 # Set up display environment
 export DISPLAY=${DISPLAY:-:0}
@@ -34,32 +34,44 @@ else
     LOCAL_INPUT="testsrc"
 fi
 
-# Calculate PIP size (1/4 of screen = 1/2 width and 1/2 height)
-PIP_WIDTH=$((SCREEN_W / 4))
-PIP_HEIGHT=$((SCREEN_H / 4))
-WEB_UI_X=$((SCREEN_W - PIP_WIDTH - 20))  # Web UI in top-right corner
-WEB_UI_Y=20  # 20px margin from top edge
-CAMERA_X=$((SCREEN_W - PIP_WIDTH - 20))  # Camera below web UI
-CAMERA_Y=$((WEB_UI_Y + PIP_HEIGHT + 10)) # 10px gap between web UI and camera
+# Calculate layout dimensions
+# Left column: 480px wide (1/4 of 1920)
+# Right area: Remaining space for WWATS with proper aspect ratio
+LEFT_COL_WIDTH=480
+WWATS_X=${LEFT_COL_WIDTH}
+WWATS_WIDTH=$((SCREEN_W - LEFT_COL_WIDTH))
+WWATS_HEIGHT=${SCREEN_H}
 
-echo "Opening WWATS interface full-screen (background)..."
-# Open browser with WWATS interface full-screen as background
+# Camera window (top of left column)
+CAMERA_X=0
+CAMERA_Y=0
+CAMERA_WIDTH=${LEFT_COL_WIDTH}
+CAMERA_HEIGHT=360  # 16:9 aspect ratio
+
+# Web UI window (bottom of left column)
+WEBUI_X=0
+WEBUI_Y=$((CAMERA_HEIGHT + 10))  # 10px gap
+WEBUI_WIDTH=${LEFT_COL_WIDTH}
+WEBUI_HEIGHT=$((SCREEN_H - CAMERA_HEIGHT - 10))  # Remaining space
+
+echo "Opening WWATS interface (right side)..."
+# Open WWATS in windowed mode on the right side
 if command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-wwats --kiosk "$REMOTE_URL" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-wwats --new-window --window-position=${WWATS_X},0 --window-size=${WWATS_WIDTH},${WWATS_HEIGHT} "$REMOTE_URL" &
 elif command -v firefox >/dev/null 2>&1; then
-    DISPLAY=:0 firefox --new-instance --kiosk "$REMOTE_URL" &
+    DISPLAY=:0 firefox --new-instance --new-window "$REMOTE_URL" &
 else
     echo "No browser found - install chromium-browser or firefox"
     exit 1
 fi
 
 # Wait a moment for browser to start
-sleep 3
+sleep 2
 
-echo "Opening local web UI in overlay window..."
-# Open local web UI in small window (for Start/Stop buttons) - separate browser instance
+echo "Opening local web UI (bottom left)..."
+# Open local web UI in bottom left area
 if command -v chromium-browser >/dev/null 2>&1; then
-    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEB_UI_X},${WEB_UI_Y} --window-size=${PIP_WIDTH},${PIP_HEIGHT} "http://localhost:8080" &
+    DISPLAY=:0 chromium-browser --no-sandbox --disable-gpu --user-data-dir=/tmp/chrome-webui --new-window --window-position=${WEBUI_X},${WEBUI_Y} --window-size=${WEBUI_WIDTH},${WEBUI_HEIGHT} "http://localhost:8080" &
 elif command -v firefox >/dev/null 2>&1; then
     DISPLAY=:0 firefox --new-instance --new-window "http://localhost:8080" &
 fi
@@ -67,19 +79,26 @@ fi
 # Wait for web UI to load
 sleep 2
 
-echo "Starting camera PIP overlay (below web UI)..."
-# Start camera as small overlay window below the web UI
+echo "Opening camera preview (top left)..."
+# Camera preview positioned in top left area
 if [[ "$LOCAL_INPUT" == "testsrc" ]]; then
-    # Try different video output methods for test pattern
-    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
-           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
-           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop 2>/dev/null || \
-    ffplay -f lavfi -i "testsrc=duration=3600:size=${PIP_WIDTH}x${PIP_HEIGHT}:rate=30" \
-           -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop
+    # Test pattern in top left
+    SDL_VIDEODRIVER=x11 ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    SDL_VIDEODRIVER=fbdev ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    ffplay -f lavfi -i "testsrc=duration=3600:size=${CAMERA_WIDTH}x${CAMERA_HEIGHT}:rate=30" \
+           -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder &
 else
-    # Try different video output methods for camera PIP
-    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop 2>/dev/null || \
-    SDL_VIDEODRIVER=fbdev ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop 2>/dev/null || \
-    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${PIP_WIDTH} -y ${PIP_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -alwaysontop
+    # Camera in top left
+    SDL_VIDEODRIVER=x11 ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    SDL_VIDEODRIVER=fbdev ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder 2>/dev/null || \
+    ffplay -f v4l2 -i "$LOCAL_INPUT" -x ${CAMERA_WIDTH} -y ${CAMERA_HEIGHT} -left ${CAMERA_X} -top ${CAMERA_Y} -noborder &
 fi
+
+echo "Preview layout setup complete!"
+echo "- Camera: Top left (${CAMERA_WIDTH}x${CAMERA_HEIGHT})"
+echo "- Web UI: Bottom left (${WEBUI_WIDTH}x${WEBUI_HEIGHT})"  
+echo "- WWATS: Right side (${WWATS_WIDTH}x${WWATS_HEIGHT})"
+echo ""
+echo "Press Ctrl+C to close all windows and exit"
